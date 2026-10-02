@@ -4,217 +4,172 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>Жанында</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#f4efe6;--ink:#1b1916;--muted:#726b62;--card:#fffaf3f2;--line:#e6dccb;--lime:#dff25a;--rose:#ff5d7a}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,sans-serif}
-button,input,textarea,select{font:inherit} main{max-width:520px;margin:0 auto;padding:14px 14px 112px}
-h1{font-size:32px;letter-spacing:-.04em;line-height:.95;margin:4px 0 8px}
-.muted{color:var(--muted)} .card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:14px;backdrop-filter:blur(8px)}
-input,textarea,select{width:100%;border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px}
-textarea{min-height:68px} label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
-.btn{width:100%;border:0;border-radius:16px;padding:13px;background:var(--ink);color:#fff;font-weight:800}
-.btn.lime{background:var(--lime);color:#1b1916} .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:8px} .hide{display:none!important}
-.mapbox{position:relative} svg{width:100%;height:auto;background:#efe6d6;border-radius:28px}
-.zone{cursor:pointer;stroke:#fffaf3;stroke-width:1.4} .zone.on{stroke:#1b1916;stroke-width:2.4}
-.pin,.place{position:absolute;transform:translate(-50%,-50%);border:0;border-radius:999px;font-weight:800}
-.pin{min-width:36px;height:36px;background:#1b1916;color:#fff;box-shadow:0 8px 16px #1b191640}
-.pin.prem{background:var(--rose)} .place{width:14px;height:14px;background:var(--lime);border:2px solid #1b1916}
-.person,.msg{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
-.ava{width:36px;height:36px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-weight:800;flex:none}
-nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(492px,calc(100% - 20px));display:flex;gap:6px;padding:6px;background:#fffaf3f2;border:1px solid var(--line);border-radius:22px}
-nav button{flex:1;border:0;background:transparent;border-radius:16px;padding:12px 4px;font-weight:800}
-nav button.on{background:#1b1916;color:#fff}
-img.shot{width:100%;border-radius:16px;margin-top:6px}
+:root{--ink:#171614;--muted:#6e675e;--card:#fffaf3f4;--line:#e7dccb;--lime:#dff25a;--rose:#ff5d7a}
+*{box-sizing:border-box} body{margin:0;font-family:Manrope,sans-serif;color:var(--ink);background:#efe7da}
+#map{position:fixed;inset:0}
+.sheet{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);width:min(520px,calc(100% - 16px));background:var(--card);border:1px solid var(--line);border-radius:24px;padding:12px;backdrop-filter:blur(10px);max-height:42dvh;overflow:auto}
+h1{font-size:28px;letter-spacing:-.04em;margin:4px 0} .muted{color:var(--muted);font-size:13px}
+input,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px;font:inherit;background:#fff}
+.btn{width:100%;border:0;border-radius:14px;padding:12px;font-weight:800;background:var(--ink);color:#fff}
+.btn.lime{background:var(--lime);color:#171614} .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.person{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.ava{width:34px;height:34px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-weight:800;flex:none}
+nav{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(520px,calc(100% - 16px));display:flex;gap:6px;padding:6px;background:#fffaf3f2;border:1px solid var(--line);border-radius:20px}
+nav button{flex:1;border:0;background:transparent;border-radius:14px;padding:11px 4px;font-weight:800}
+nav button.on{background:#171614;color:#fff}
+.hide{display:none!important}
+.me-dot{background:#171614;border:3px solid var(--lime);border-radius:50%}
 </style>
 </head>
 <body>
-<main>
-<section id="auth">
-<p class="muted">карта своих · границы областей</p>
-<h1>Видь, кто в области. Пиши лично.</h1>
-<p class="muted">Контур настоящий. Точка появляется, только если человек сам нажал «я здесь». Дом сюда не ставь.</p>
-<div class="card">
-<label>Прозвище</label><input id="nick" maxlength="16" placeholder="не настоящее имя"/>
-<label>Пароль</label><input id="pass" type="password"/>
-<label>Область</label><select id="region"></select>
-<label>Чем полезен</label><input id="skill" placeholder="математика, перевод, открытая аптека"/>
-<button class="btn lime" id="enter" type="button">Войти на карту</button>
+<div id="map"></div>
+<div class="sheet" id="sheet">
+  <section id="auth">
+    <h1>Улицы, не пятна.</h1>
+    <p class="muted">Карта показывает переулки. Человека видно, только если он сам включил точку. 5 км за день — достижение, не вход.</p>
+    <input id="url" placeholder="Supabase URL"/>
+    <input id="key" placeholder="anon key" style="margin-top:8px"/>
+    <input id="nick" maxlength="16" placeholder="прозвище" style="margin-top:8px"/>
+    <input id="skill" placeholder="чем полезен" style="margin-top:8px"/>
+    <button class="btn lime" id="enter" type="button" style="margin-top:8px">Открыть город</button>
+    <p class="muted">Сначала создай проект на supabase.com, вставь supabase.sql, затем сюда URL и anon key.</p>
+  </section>
+  <section id="app" class="hide">
+    <div id="view-map">
+      <b id="hello"></b>
+      <p class="muted" id="km">0 км сегодня</p>
+      <div class="row">
+        <button class="btn lime" id="share" type="button">Меня видно</button>
+        <button class="btn ghost" id="mark" type="button">Место</button>
+      </div>
+      <div id="people"></div>
+    </div>
+    <div id="view-dm" class="hide">
+      <b id="dm-title">Личка</b>
+      <div id="dm"></div>
+      <textarea id="dmtext" placeholder="сообщение"></textarea>
+      <button class="btn" id="send" type="button">Отправить</button>
+      <button class="btn ghost" id="block" type="button">Скрыть этого человека</button>
+    </div>
+    <div id="view-me" class="hide">
+      <b id="me"></b>
+      <div id="badges"></div>
+      <p class="muted">5 км за день, 10 км, три разных района. Не за то, что открыл сайт.</p>
+      <button class="btn ghost" id="out" type="button">Выйти</button>
+    </div>
+  </section>
 </div>
-</section>
-<section id="app" class="hide">
-<div class="row"><div><p class="muted" id="where"></p><h1 id="hello"></h1></div><button class="btn ghost" id="out" type="button">выйти</button></div>
-<div id="view-map">
-<div class="card mapbox"><svg viewBox="0 0 640 420" id="kg"></svg><div id="pins"></div></div>
-<div class="card">
-<button class="btn lime" id="here" type="button">Я здесь</button>
-<p class="muted">Нажми на карту, чтобы оставить впечатление места. Нажми на человека — личка.</p>
-<div id="people"></div>
-<div id="places"></div>
-</div>
-</section>
-<div id="view-dm" class="hide">
-<div class="card">
-<h2 id="dm-title" style="margin-top:0">Личка</h2>
-<div id="dm"></div>
-<textarea id="dmtext" maxlength="200" placeholder="Сообщение"></textarea>
-<input id="dmphoto" type="file" accept="image/*"/>
-<div class="row"><button class="btn" id="dmsend" type="button">Отправить</button><button class="btn ghost" id="block" type="button">Скрыть</button></div>
-</div>
-</div>
-<div id="view-me" class="hide">
-<div class="card">
-<h2 id="me-name" style="margin-top:0"></h2>
-<p id="me-skill"></p>
-<div id="ach"></div>
-<p class="muted">Премиум — розовый кружок и фото в личке. Код после оплаты снаружи. Карту не вводи.</p>
-<input id="code" placeholder="код"/>
-<button class="btn lime" id="prem" type="button">Открыть премиум</button>
-</div>
-</div>
-</section>
-</main>
-<nav id="bar" class="hide">
-<button class="on" id="tab-map" type="button">Карта</button>
-<button id="tab-dm" type="button">Личка</button>
-<button id="tab-me" type="button">Я</button>
+<nav>
+  <button class="on" id="tab-map" type="button">Карта</button>
+  <button id="tab-dm" type="button">Личка</button>
+  <button id="tab-me" type="button">Я</button>
 </nav>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const REGIONS = [{"id": "batken", "name": "Баткен", "color": "#f2d56b", "d": "M 165.8 302.4 L 163.3 301.5 L 161.3 300.7 L 158.7 302.1 L 157.4 305.3 L 153.5 309.2 L 152.3 310.6 L 150.4 307.9 L 149.9 306.9 L 151.1 306.3 L 151.0 303.5 L 149.9 300.0 L 147.4 300.5 L 146.6 301.4 L 146.8 303.7 L 146.5 305.1 L 144.4 304.9 L 142.9 305.0 L 140.7 301.9 L 140.0 299.3 L 135.9 298.7 L 133.1 296.5 L 132.7 295.4 L 131.5 295.8 L 129.4 296.5 L 126.9 293.8 L 126.2 294.4 L 120.3 293.8 L 117.1 296.9 L 113.3 297.5 L 110.9 301.2 L 109.8 305.6 L 103.8 310.0 L 102.1 308.2 L 100.3 313.6 L 96.1 315.3 L 93.2 320.1 L 93.5 325.6 L 91.7 328.3 L 87.7 328.9 L 84.6 332.0 L 84.7 330.4 L 89.0 324.9 L 86.2 322.3 L 82.6 320.1 L 78.1 317.9 L 75.2 315.1 L 71.5 313.9 L 67.9 312.9 L 67.0 311.1 L 58.6 304.4 L 50.4 306.5 L 42.5 311.1 L 38.1 314.5 L 32.1 314.0 L 29.9 320.6 L 31.0 330.1 L 30.9 331.6 L 29.2 332.1 L 27.0 333.6 L 25.2 333.0 L 25.0 327.4 L 22.8 326.2 L 20.8 323.6 L 21.1 327.3 L 20.0 329.4 L 18.5 331.6 L 19.0 336.4 L 18.9 337.8 L 17.4 340.9 L 16.3 341.8 L 17.0 346.4 L 19.1 351.5 L 19.1 355.5 L 19.6 360.1 L 20.1 363.4 L 20.7 367.1 L 20.8 370.2 L 23.3 367.6 L 24.3 368.7 L 28.0 370.3 L 30.1 369.0 L 31.9 367.7 L 33.8 365.7 L 35.7 364.5 L 38.0 365.6 L 41.0 364.1 L 45.5 366.4 L 47.8 368.4 L 50.3 368.4 L 52.4 365.4 L 55.6 367.5 L 58.5 368.1 L 60.5 366.9 L 63.6 364.6 L 65.0 367.2 L 68.2 365.6 L 70.2 368.3 L 73.6 370.4 L 75.2 367.0 L 77.6 363.8 L 80.9 364.0 L 85.5 362.8 L 87.9 363.9 L 91.6 364.9 L 95.2 370.8 L 99.0 376.6 L 102.0 383.6 L 107.4 384.1 L 110.0 379.6 L 115.9 381.1 L 117.7 372.4 L 125.5 369.6 L 128.6 371.3 L 132.2 365.8 L 139.3 362.3 L 147.6 353.3 L 155.2 357.2 L 170.3 362.0 L 180.7 362.0 L 192.2 357.0 L 196.4 345.1 L 189.8 342.1 L 182.7 331.7 L 182.2 314.5 L 179.4 301.6 L 171.3 301.2 L 165.8 302.4 Z", "cx": 92.5, "cy": 333.9}, {"id": "osh", "name": "Ош", "color": "#e7d4ff", "d": "M 140.3 362.6 L 142.6 369.9 L 146.2 378.2 L 153.7 377.1 L 156.4 384.8 L 156.1 394.0 L 162.1 394.3 L 166.1 388.7 L 170.9 387.0 L 174.1 394.8 L 177.3 394.8 L 179.2 399.0 L 181.3 404.0 L 183.0 398.9 L 184.4 394.3 L 185.2 390.9 L 187.0 388.8 L 189.9 388.0 L 191.9 387.5 L 193.9 386.0 L 196.2 384.6 L 198.4 385.9 L 200.6 385.8 L 201.8 382.8 L 203.9 383.2 L 207.1 383.9 L 208.8 384.9 L 211.5 387.5 L 213.6 386.0 L 215.8 387.5 L 219.0 385.4 L 222.2 386.5 L 225.1 386.8 L 229.0 384.7 L 231.0 385.9 L 234.6 386.2 L 237.5 384.0 L 241.2 383.4 L 243.1 380.4 L 244.2 378.6 L 247.8 376.8 L 250.4 376.1 L 253.1 376.6 L 255.2 376.3 L 257.4 376.0 L 260.0 375.7 L 262.4 376.4 L 266.9 375.9 L 270.8 374.8 L 272.0 371.2 L 271.9 368.7 L 273.9 366.3 L 274.1 364.3 L 275.7 363.6 L 275.6 361.0 L 274.4 355.4 L 273.8 351.8 L 273.2 349.8 L 271.1 348.7 L 269.6 348.8 L 269.7 345.1 L 270.7 340.6 L 272.5 338.5 L 274.2 334.6 L 275.0 329.6 L 277.1 325.3 L 274.9 323.4 L 276.5 321.9 L 278.7 319.6 L 281.2 316.5 L 282.5 318.0 L 285.0 316.2 L 286.3 315.4 L 288.8 314.5 L 291.0 313.8 L 293.2 313.4 L 295.4 314.7 L 297.4 316.7 L 299.1 315.2 L 300.7 313.6 L 302.1 312.0 L 303.8 310.4 L 305.2 308.1 L 307.7 305.8 L 309.0 302.9 L 311.3 298.9 L 314.0 299.1 L 316.2 298.6 L 317.4 294.8 L 318.0 292.5 L 322.4 292.1 L 324.7 293.3 L 326.7 294.0 L 329.1 292.9 L 327.0 290.6 L 326.1 288.5 L 325.1 286.9 L 322.7 284.4 L 323.4 282.1 L 323.9 279.5 L 318.0 276.8 L 310.7 266.6 L 298.5 259.0 L 273.2 227.0 L 262.4 230.0 L 259.4 238.5 L 254.5 227.1 L 259.5 225.6 L 258.4 218.0 L 253.4 226.2 L 248.6 229.0 L 244.4 236.0 L 235.6 239.9 L 230.9 251.2 L 224.2 252.8 L 218.5 257.1 L 215.3 259.2 L 212.5 261.5 L 210.8 264.9 L 209.8 270.9 L 209.1 271.2 L 208.1 270.1 L 205.0 269.6 L 204.6 270.4 L 204.4 272.3 L 202.8 277.2 L 196.3 272.8 L 191.6 268.6 L 189.1 267.5 L 188.4 268.3 L 188.3 270.6 L 189.2 271.4 L 190.7 273.3 L 191.1 274.4 L 189.6 276.0 L 189.5 277.6 L 191.8 279.6 L 190.8 287.5 L 186.3 284.1 L 182.7 282.9 L 178.7 280.0 L 177.3 278.6 L 174.9 282.3 L 172.4 286.6 L 170.8 289.1 L 167.7 293.3 L 167.2 297.1 L 170.6 298.6 L 168.3 299.8 L 164.3 301.9 L 171.0 301.1 L 179.3 297.8 L 179.9 310.4 L 182.6 330.4 L 189.3 340.1 L 195.1 340.8 L 192.8 355.9 L 182.4 362.0 L 173.3 362.4 L 157.3 357.5 L 148.6 351.8 L 140.3 362.6 Z M 209.7 262.5 Z", "cx": 232.5, "cy": 324.6}, {"id": "talas", "name": "Талас", "color": "#d7ee8a", "d": "M 251.7 94.8 L 244.1 94.9 L 240.8 88.4 L 229.8 83.8 L 217.6 85.1 L 211.9 81.0 L 207.0 74.9 L 198.1 71.9 L 190.1 68.2 L 183.3 64.1 L 177.8 64.9 L 172.6 65.5 L 164.8 60.0 L 158.2 57.3 L 154.4 59.5 L 147.5 63.4 L 143.1 61.3 L 138.2 61.4 L 132.6 61.6 L 125.8 68.5 L 122.3 73.2 L 122.1 77.3 L 120.9 78.7 L 117.1 90.2 L 110.3 91.4 L 108.7 97.0 L 108.4 100.0 L 106.3 101.6 L 105.6 105.0 L 105.0 107.2 L 106.4 110.2 L 108.2 110.8 L 111.6 112.1 L 112.5 110.4 L 114.2 108.4 L 116.0 108.6 L 119.0 109.7 L 120.6 111.1 L 122.9 113.3 L 124.8 114.9 L 126.1 116.1 L 128.8 115.5 L 131.3 116.1 L 134.0 116.8 L 137.0 118.3 L 139.4 117.7 L 147.7 116.1 L 169.6 127.6 L 175.9 130.3 L 180.8 115.2 L 189.3 118.1 L 196.3 121.7 L 212.2 130.3 L 221.5 123.3 L 228.9 125.0 L 229.6 119.0 L 226.8 110.5 L 231.5 110.4 L 236.1 108.6 L 240.9 108.4 L 244.8 106.2 L 251.6 107.0 L 257.4 102.8 L 260.0 94.1 L 257.5 92.8 L 254.4 89.8 L 252.7 95.9 L 251.7 94.8 Z", "cx": 174.2, "cy": 97.2}, {"id": "jalal-abad", "name": "Жалал-Абад", "color": "#ffc7b8", "d": "M 271.2 221.1 L 256.6 201.8 L 250.9 191.9 L 245.2 185.1 L 263.5 175.8 L 275.2 173.6 L 272.1 163.5 L 267.1 161.9 L 256.6 155.2 L 258.7 150.3 L 263.3 147.5 L 267.1 141.6 L 264.4 135.5 L 254.8 136.1 L 250.7 135.1 L 247.0 134.4 L 242.5 133.0 L 239.4 126.3 L 229.9 123.5 L 222.3 123.4 L 216.0 130.3 L 198.7 121.8 L 189.2 119.5 L 182.5 115.3 L 177.6 128.8 L 170.6 128.6 L 149.4 116.5 L 139.8 117.1 L 137.3 118.6 L 134.0 117.0 L 131.5 116.3 L 128.8 115.9 L 127.0 116.6 L 126.3 119.4 L 124.4 122.0 L 123.3 123.0 L 120.0 123.4 L 118.0 125.4 L 115.3 128.2 L 113.8 129.6 L 113.0 131.1 L 110.1 133.1 L 106.5 131.9 L 104.7 130.9 L 104.4 133.5 L 103.6 136.8 L 104.2 140.3 L 103.0 143.3 L 100.0 143.0 L 97.7 144.2 L 94.9 144.1 L 93.5 145.8 L 92.2 148.6 L 90.2 150.2 L 88.3 154.0 L 86.0 155.1 L 85.0 160.1 L 82.6 162.5 L 80.0 165.4 L 77.1 169.5 L 72.2 172.1 L 69.0 172.9 L 68.4 176.0 L 67.2 179.2 L 67.6 182.8 L 70.8 183.9 L 73.6 181.5 L 75.6 183.7 L 78.5 186.4 L 81.1 188.5 L 82.8 191.4 L 85.0 193.0 L 87.4 191.8 L 88.6 188.8 L 90.2 187.9 L 92.7 187.4 L 95.7 186.7 L 97.5 190.3 L 99.5 193.6 L 100.3 197.4 L 100.3 200.0 L 99.5 205.1 L 100.2 212.0 L 101.1 209.0 L 103.4 207.0 L 105.6 209.7 L 107.8 212.4 L 110.4 215.0 L 114.8 213.3 L 119.3 217.2 L 123.0 213.2 L 125.0 212.6 L 127.6 216.6 L 130.1 218.4 L 133.4 216.7 L 136.6 218.8 L 137.7 211.2 L 137.1 204.3 L 140.2 201.7 L 143.0 203.3 L 145.5 200.2 L 147.8 197.8 L 149.8 189.8 L 149.6 186.3 L 148.9 183.9 L 151.2 180.3 L 153.1 180.4 L 152.0 185.8 L 151.9 191.1 L 153.0 188.0 L 154.9 188.5 L 156.4 192.1 L 158.3 194.6 L 159.1 197.4 L 161.2 196.7 L 162.1 201.5 L 161.9 206.3 L 160.4 210.2 L 161.2 213.9 L 163.4 216.0 L 168.0 216.0 L 170.5 218.5 L 171.8 219.3 L 175.3 215.4 L 177.4 216.1 L 177.6 219.8 L 179.2 228.0 L 178.8 230.9 L 181.3 230.5 L 183.7 228.1 L 186.4 226.8 L 188.0 226.9 L 191.3 227.6 L 194.6 231.7 L 194.9 233.6 L 196.0 233.7 L 197.9 234.1 L 198.7 236.2 L 200.5 239.8 L 205.2 244.9 L 213.8 244.4 L 218.5 249.2 L 221.2 247.8 L 221.8 247.7 L 223.1 245.7 L 224.8 246.1 L 228.1 245.1 L 230.6 246.6 L 239.0 234.8 L 245.4 230.8 L 248.9 229.0 L 253.9 224.6 L 259.3 219.1 L 258.8 225.4 L 253.4 229.4 L 260.9 239.3 L 265.4 224.9 L 271.2 221.1 Z", "cx": 160.6, "cy": 184.6}, {"id": "issyk-kul", "name": "Ысык-Көл", "color": "#b9e4f5", "d": "M 369.6 93.9 L 375.3 98.5 L 377.2 100.9 L 383.7 100.8 L 388.1 98.9 L 388.5 104.3 L 390.7 114.4 L 393.8 119.7 L 397.4 124.1 L 395.9 128.9 L 392.9 135.3 L 399.9 134.6 L 406.2 134.7 L 413.0 137.6 L 421.0 139.9 L 423.5 147.6 L 417.1 154.0 L 417.9 159.5 L 426.5 155.9 L 428.3 168.1 L 435.8 176.0 L 456.3 175.5 L 464.4 171.3 L 459.1 180.1 L 467.8 194.0 L 464.4 206.4 L 481.5 203.0 L 495.8 213.3 L 498.9 213.7 L 500.8 212.8 L 502.5 211.8 L 506.2 209.7 L 507.8 207.2 L 507.8 203.7 L 509.1 198.6 L 510.1 194.1 L 514.6 193.7 L 517.5 193.9 L 519.9 193.8 L 522.1 192.6 L 523.9 191.4 L 527.0 190.4 L 529.9 188.9 L 530.6 186.7 L 531.8 185.3 L 533.6 186.5 L 535.4 186.2 L 536.9 184.2 L 539.3 181.2 L 539.9 178.4 L 541.9 178.1 L 544.9 177.8 L 547.0 176.1 L 549.0 174.5 L 550.1 172.8 L 551.9 170.8 L 553.2 169.3 L 555.7 168.2 L 557.0 167.5 L 558.5 166.0 L 560.4 165.5 L 562.4 163.1 L 564.8 162.1 L 568.0 161.5 L 569.8 159.9 L 570.9 157.4 L 573.1 154.9 L 575.0 155.6 L 577.5 152.7 L 581.2 150.4 L 585.8 151.4 L 589.3 149.7 L 590.9 146.7 L 595.6 145.6 L 598.3 146.2 L 600.0 144.3 L 600.3 142.0 L 601.1 139.4 L 602.8 138.0 L 604.4 133.3 L 606.9 132.1 L 610.1 131.7 L 613.6 131.4 L 618.5 132.8 L 620.4 132.6 L 624.0 130.3 L 620.6 126.8 L 618.9 122.0 L 620.9 116.1 L 617.6 106.8 L 615.8 103.9 L 612.3 103.1 L 609.9 98.8 L 609.5 95.1 L 608.1 94.5 L 606.1 94.4 L 604.0 94.7 L 599.1 93.1 L 595.9 91.5 L 593.8 90.8 L 591.5 92.8 L 588.3 92.7 L 586.2 92.6 L 583.6 92.1 L 582.3 89.3 L 579.7 87.1 L 577.9 83.9 L 575.9 80.3 L 572.7 78.0 L 570.7 76.8 L 568.7 75.0 L 566.2 70.9 L 565.4 66.1 L 565.9 63.0 L 559.0 62.6 L 554.6 62.3 L 549.7 61.3 L 546.8 60.3 L 544.0 60.2 L 540.6 58.1 L 538.1 58.8 L 536.3 57.2 L 533.9 55.2 L 530.5 53.7 L 528.8 51.9 L 527.0 51.4 L 524.9 51.9 L 522.0 52.6 L 520.5 54.2 L 517.4 54.8 L 515.3 53.6 L 512.7 52.9 L 510.5 52.8 L 509.2 54.4 L 506.8 54.1 L 504.8 55.6 L 502.8 54.7 L 500.3 54.4 L 497.5 54.6 L 495.4 53.5 L 493.4 51.8 L 490.2 52.0 L 488.8 49.7 L 485.7 50.1 L 483.6 50.4 L 480.7 49.2 L 478.3 49.1 L 476.5 47.4 L 474.0 47.7 L 472.5 48.4 L 469.9 47.9 L 466.2 49.5 L 463.4 50.0 L 461.3 49.4 L 457.3 49.4 L 452.4 59.2 L 422.4 62.6 L 416.1 61.9 L 414.5 64.5 L 410.0 65.2 L 404.5 70.8 L 399.9 76.5 L 395.4 77.5 L 390.1 79.2 L 380.5 80.4 L 378.8 83.5 L 373.9 86.5 L 372.3 90.5 L 369.6 93.9 Z", "cx": 513.9, "cy": 116.3}, {"id": "chuy", "name": "Чүй", "color": "#c9f0d8", "d": "M 229.9 123.5 L 239.4 126.3 L 242.5 133.0 L 247.0 134.4 L 250.7 135.1 L 254.8 136.1 L 264.4 135.5 L 267.1 141.6 L 270.9 141.4 L 275.8 141.0 L 278.3 140.4 L 282.1 145.6 L 285.8 145.9 L 285.8 152.0 L 292.2 145.1 L 294.3 139.4 L 296.0 132.2 L 299.0 128.9 L 296.7 125.8 L 298.0 115.9 L 303.2 115.8 L 311.0 115.0 L 319.8 109.5 L 326.9 106.2 L 323.8 95.9 L 325.9 96.0 L 328.2 95.8 L 329.9 95.0 L 332.3 96.0 L 334.4 93.9 L 336.5 96.3 L 339.0 95.4 L 340.0 93.9 L 341.7 95.1 L 345.7 95.3 L 349.0 96.4 L 352.2 95.1 L 354.3 93.8 L 356.9 95.7 L 358.7 95.4 L 361.2 94.8 L 362.8 94.4 L 364.4 95.6 L 366.7 95.2 L 369.1 93.6 L 373.3 88.8 L 376.9 85.6 L 378.4 81.0 L 383.1 81.6 L 392.1 79.1 L 398.1 78.4 L 400.6 74.4 L 406.6 68.9 L 411.4 65.5 L 415.0 63.7 L 418.0 62.8 L 434.8 61.8 L 457.5 53.0 L 457.3 48.1 L 453.5 46.4 L 452.5 43.8 L 450.1 43.3 L 447.9 45.4 L 446.0 45.1 L 443.6 42.6 L 441.2 44.1 L 439.2 44.2 L 437.4 43.8 L 435.9 44.2 L 433.8 46.3 L 431.4 47.4 L 428.9 50.2 L 425.7 49.8 L 422.4 49.9 L 420.2 49.8 L 417.4 50.2 L 414.4 52.4 L 410.7 53.5 L 408.5 54.5 L 406.2 52.3 L 405.7 49.8 L 403.5 48.9 L 400.6 49.2 L 396.2 48.6 L 393.8 48.7 L 391.0 49.7 L 387.0 47.6 L 386.0 45.5 L 382.7 46.5 L 378.4 49.1 L 372.3 59.9 L 364.6 57.4 L 359.3 56.8 L 356.7 56.1 L 351.0 54.9 L 346.4 55.0 L 343.2 52.7 L 339.9 50.7 L 336.9 48.6 L 333.2 46.7 L 331.4 45.7 L 330.0 44.9 L 328.7 43.7 L 327.0 42.4 L 325.6 41.2 L 323.0 41.2 L 321.5 42.0 L 318.9 40.9 L 314.3 35.6 L 311.8 31.6 L 311.0 29.2 L 309.3 28.3 L 308.0 27.8 L 306.6 27.2 L 305.2 26.4 L 302.1 24.8 L 301.1 24.4 L 300.6 23.1 L 299.3 22.7 L 297.5 21.9 L 296.3 20.8 L 295.4 20.3 L 293.6 17.9 L 292.6 17.4 L 291.0 17.0 L 290.9 21.8 L 282.1 24.1 L 276.9 20.2 L 273.7 29.5 L 267.8 30.5 L 257.1 37.4 L 254.1 42.2 L 251.7 50.1 L 251.4 62.0 L 248.9 66.7 L 248.0 87.9 L 252.1 95.7 L 254.1 90.5 L 256.2 92.1 L 259.0 92.3 L 257.7 100.3 L 254.0 106.0 L 247.2 106.1 L 242.2 108.5 L 238.1 107.3 L 232.8 109.3 L 228.1 110.3 L 226.7 117.2 L 229.6 122.2 L 229.9 123.5 Z", "cx": 333.5, "cy": 73.3}, {"id": "naryn", "name": "Нарын", "color": "#f3d2b0", "d": "M 323.9 277.6 L 328.2 278.2 L 330.0 280.3 L 333.0 282.4 L 335.0 281.4 L 336.5 283.1 L 338.7 283.7 L 341.1 282.3 L 344.2 283.1 L 347.2 281.9 L 349.5 280.2 L 351.5 276.7 L 353.1 274.9 L 355.2 274.0 L 357.0 273.0 L 358.7 270.9 L 360.0 268.2 L 361.6 266.4 L 363.6 264.5 L 366.5 262.8 L 367.1 263.7 L 368.0 265.1 L 369.1 266.9 L 368.6 270.7 L 368.5 273.1 L 369.9 277.7 L 372.4 279.7 L 373.9 281.5 L 373.2 283.7 L 372.4 285.3 L 370.9 290.4 L 371.8 292.9 L 372.0 295.1 L 372.4 297.2 L 373.2 299.0 L 374.7 296.6 L 376.7 297.0 L 378.3 296.1 L 379.8 294.5 L 382.0 295.8 L 384.3 296.9 L 385.2 297.3 L 385.2 295.1 L 386.5 292.8 L 387.0 290.1 L 389.1 289.7 L 390.2 291.8 L 392.7 290.1 L 395.7 290.2 L 398.4 290.7 L 400.2 288.7 L 402.1 287.4 L 405.0 284.6 L 406.8 287.1 L 407.2 290.5 L 408.0 293.5 L 408.9 291.3 L 409.7 289.0 L 411.8 289.8 L 414.3 288.3 L 415.1 286.2 L 416.7 285.2 L 418.5 282.1 L 419.3 280.7 L 419.7 276.1 L 421.3 271.8 L 422.5 270.8 L 424.0 267.6 L 425.7 265.4 L 426.0 261.0 L 426.5 259.1 L 425.3 256.8 L 425.2 253.8 L 426.5 251.4 L 428.1 251.2 L 428.7 249.7 L 429.9 248.1 L 430.0 245.2 L 430.5 241.8 L 430.5 238.5 L 431.1 236.4 L 433.1 234.5 L 434.7 233.2 L 436.6 232.8 L 437.5 229.4 L 438.7 228.5 L 440.9 228.5 L 441.9 227.3 L 443.4 225.1 L 445.2 224.5 L 447.2 224.9 L 450.4 225.7 L 451.8 228.2 L 454.0 229.5 L 456.4 228.6 L 458.3 228.3 L 459.5 229.5 L 461.1 230.4 L 463.1 228.3 L 465.5 227.0 L 467.0 227.6 L 467.8 228.3 L 469.7 228.7 L 470.8 231.0 L 473.3 231.1 L 475.5 230.4 L 477.4 230.4 L 479.6 230.6 L 481.1 230.3 L 483.3 230.2 L 485.3 228.8 L 487.5 229.3 L 488.3 227.8 L 490.0 226.7 L 489.3 222.3 L 493.8 214.8 L 481.5 203.0 L 464.4 206.4 L 467.8 194.0 L 459.1 180.1 L 464.4 171.3 L 456.3 175.5 L 435.8 176.0 L 428.3 168.1 L 426.5 155.9 L 417.9 159.5 L 417.1 154.0 L 423.5 147.6 L 421.0 139.9 L 413.0 137.6 L 406.2 134.7 L 399.9 134.6 L 392.9 135.3 L 395.9 128.9 L 397.4 124.1 L 393.8 119.7 L 390.7 114.4 L 388.5 104.3 L 388.1 98.9 L 383.7 100.8 L 377.2 100.9 L 375.3 98.5 L 369.6 93.9 L 367.5 95.2 L 365.3 96.2 L 362.9 95.2 L 362.4 93.4 L 360.1 95.1 L 357.3 95.2 L 354.9 93.4 L 352.7 95.1 L 350.1 96.0 L 346.9 95.2 L 343.8 95.8 L 340.8 94.0 L 339.5 94.9 L 337.1 96.0 L 335.4 94.2 L 333.1 95.2 L 330.6 95.1 L 328.7 95.2 L 326.7 95.6 L 324.6 95.8 L 324.3 100.1 L 323.4 107.8 L 315.1 113.7 L 305.6 116.0 L 299.2 116.1 L 296.4 123.3 L 299.9 128.4 L 297.1 130.7 L 295.6 138.4 L 293.5 143.9 L 286.9 149.1 L 285.1 147.9 L 284.3 144.6 L 280.4 143.0 L 277.2 139.3 L 272.7 141.5 L 268.6 141.0 L 264.2 146.8 L 260.9 150.3 L 256.3 152.3 L 264.8 160.6 L 270.9 162.7 L 274.0 170.4 L 274.0 177.9 L 250.0 179.5 L 250.1 190.8 L 253.6 201.5 L 262.9 206.0 L 290.3 245.0 L 302.4 262.9 L 311.4 270.4 L 323.9 277.6 Z", "cx": 383.0, "cy": 212.8}];
-const TOPIC="janynda-kg-real";
-const PREMIUM="61-ordo";
-const KEY="janynda-me";
+const KEY="janynda-live";
 let me=JSON.parse(localStorage.getItem(KEY)||"null");
-let people={}, msgs=[], places=[], room=me?.region||"chuy", peer="";
-const sel=document.getElementById("region");
-REGIONS.forEach(r=>{const o=document.createElement("option");o.value=r.id;o.textContent=r.name;sel.appendChild(o)});
+let peer="", sharing=false, watchId=null, last=null, km=0, day=new Date().toISOString().slice(0,10);
+let blocks=JSON.parse(localStorage.getItem("janynda-block")||"[]");
+const map=L.map("map",{zoomControl:false}).setView([42.87,74.59],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+const layer=L.layerGroup().addTo(map);
+const meMarker=L.circleMarker([42.87,74.59],{radius:8,className:"me-dot"}).addTo(map);
 function save(){localStorage.setItem(KEY,JSON.stringify(me))}
-function regionBy(id){return REGIONS.find(r=>r.id===id)||REGIONS[0]}
-function blocked(nick){return (me?.block||[]).includes(nick)}
-function drawMap(){
-  const svg=document.getElementById("kg");
-  svg.innerHTML="";
-  REGIONS.forEach(r=>{
-    const p=document.createElementNS("http://www.w3.org/2000/svg","path");
-    p.setAttribute("d",r.d); p.setAttribute("fill",r.color); p.setAttribute("class","zone"+(r.id===room?" on":""));
-    p.onclick=(ev)=>{room=r.id; if(me){me.region=r.id;save()} const box=svg.getBoundingClientRect(); drop(ev.clientX,ev.clientY,box); drawMap(); draw()};
-    svg.appendChild(p);
-    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-    t.setAttribute("x",r.cx); t.setAttribute("y",r.cy); t.setAttribute("text-anchor","middle"); t.setAttribute("font-size","13"); t.setAttribute("font-weight","800"); t.setAttribute("fill","#1b1916");
-    t.textContent=r.name; svg.appendChild(t);
-  });
-  const pins=document.getElementById("pins"); pins.innerHTML="";
-  const now=Date.now();
-  Object.values(people).filter(p=>now-p.t<120000 && !blocked(p.nick)).forEach(p=>{
-    const r=regionBy(p.region);
-    const el=document.createElement("button");
-    el.className="pin"+(p.premium?" prem":"");
-    el.style.left=((p.x??r.cx)/640*100)+"%"; el.style.top=((p.y??r.cy)/420*100)+"%";
-    el.textContent=p.nick.slice(0,2);
-    el.onclick=(e)=>{e.stopPropagation(); peer=p.nick; tab("dm"); draw()};
-    pins.appendChild(el);
-  });
-  places.filter(p=>!blocked(p.nick)).slice(-12).forEach(p=>{
-    const el=document.createElement("button");
-    el.className="place"; el.style.left=(p.x/640*100)+"%"; el.style.top=(p.y/420*100)+"%";
-    el.title=p.text; pins.appendChild(el);
-  });
+function headers(){return {"apikey":me.key,"Authorization":"Bearer "+me.key,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"}}
+async function sb(path, opt={}){
+  const res=await fetch(me.url.replace(/\/$/,"")+"/rest/v1/"+path, {headers:headers(), ...opt});
+  if(!res.ok) throw new Error(await res.text());
+  const text=await res.text(); return text?JSON.parse(text):null;
 }
-function drop(cx,cy,box){
-  if(!me) return;
-  const x=(cx-box.left)/box.width*640, y=(cy-box.top)/box.height*420;
-  const text=prompt("Впечатление этого места. Пусто — просто отметить область.");
-  if(text===null) return;
-  publish({kind:"place", nick:me.nick, region:room, x, y, text:text.slice(0,80), t:Date.now()});
-}
-function showApp(on){
+function show(on){
   document.getElementById("auth").classList.toggle("hide",on);
   document.getElementById("app").classList.toggle("hide",!on);
-  document.getElementById("bar").classList.toggle("hide",!on);
   if(!on) return;
-  document.getElementById("where").textContent=regionBy(me.region).name;
   document.getElementById("hello").textContent=me.nick;
-  document.getElementById("me-name").innerHTML=me.nick+(me.premium?' <span class="badge">премиум</span>':"");
-  document.getElementById("me-skill").textContent=me.skill||"пока не сказал, чем полезен";
-  document.getElementById("ach").innerHTML=(me.ach||[]).map(a=>`<div class="person"><div class="ava">+</div><div>${a}</div></div>`).join("");
-  drawMap(); draw();
+  document.getElementById("me").textContent=me.nick;
+  document.getElementById("km").textContent=km.toFixed(1)+" км сегодня";
 }
-document.getElementById("enter").onclick=()=>{
+document.getElementById("enter").onclick=async()=>{
+  const url=document.getElementById("url").value.trim();
+  const key=document.getElementById("key").value.trim();
   const nick=document.getElementById("nick").value.trim();
-  const pass=document.getElementById("pass").value;
-  if(nick.length<3||pass.length<4) return;
-  me=me&&me.nick===nick?me:{nick,premium:false,ach:["открыл карту"],block:[]};
-  me.region=document.getElementById("region").value; me.skill=document.getElementById("skill").value.trim(); me.pass=pass; me.block=me.block||[];
-  room=me.region; save(); showApp(true); beat();
+  if(!url||!key||nick.length<3) return;
+  me={url,key,nick,skill:document.getElementById("skill").value.trim()};
+  save();
+  await sb("profiles",{method:"POST",body:JSON.stringify({nick,skill:me.skill})});
+  show(true); pull();
 };
-document.getElementById("out").onclick=()=>{me=null; localStorage.removeItem(KEY); showApp(false)};
+document.getElementById("out").onclick=()=>{if(watchId) navigator.geolocation.clearWatch(watchId); me=null; localStorage.removeItem(KEY); show(false)};
 function tab(name){["map","dm","me"].forEach(id=>{document.getElementById("view-"+id).classList.toggle("hide",id!==name); document.getElementById("tab-"+id).classList.toggle("on",id===name)})}
 document.getElementById("tab-map").onclick=()=>tab("map");
 document.getElementById("tab-dm").onclick=()=>tab("dm");
 document.getElementById("tab-me").onclick=()=>tab("me");
-async function publish(obj){await fetch("https://ntfy.sh/"+TOPIC,{method:"POST",body:JSON.stringify(obj)})}
-function beat(){if(!me) return; const r=regionBy(me.region); publish({kind:"here",nick:me.nick,region:me.region,skill:me.skill,premium:!!me.premium,x:me.x||r.cx,y:me.y||r.cy,t:Date.now()})}
-document.getElementById("here").onclick=()=>{
-  if(!navigator.geolocation){alert("Телефон не отдал точку. Нажми на карту и отметь место сам."); return}
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lon=pos.coords.longitude, lat=pos.coords.latitude;
-    const x=16+(lon-69.26)/(80.23-69.26)*608, y=16+(43.27-lat)/(43.27-39.17)*388;
-    me.x=Math.round(x); me.y=Math.round(y); save(); beat(); drawMap();
-  },()=>alert("Без разрешения точка не ставится."));
-};
-document.getElementById("dmsend").onclick=async()=>{
-  if(!me||!peer) {alert("Сначала нажми на человека на карте."); return}
-  const text=document.getElementById("dmtext").value.trim();
-  const file=document.getElementById("dmphoto").files[0];
-  let photo="";
-  if(file){
-    if(!me.premium){alert("Фото в личке открывает премиум."); return}
-    const res=await fetch("https://ntfy.sh/"+TOPIC,{method:"POST",headers:{Filename:file.name||"shot.jpg",Title:"photo"},body:file});
-    if(res.ok){const data=await res.json(); photo=data.attachment?.url||""}
-  }
-  if(!text&&!photo) return;
-  await publish({kind:"dm",frm:me.nick,to:peer,text:text.slice(0,200),photo,t:Date.now()});
-  if(!me.ach.includes("написал лично")) me.ach.push("написал лично");
-  save(); document.getElementById("dmtext").value=""; document.getElementById("dmphoto").value=""; showApp(true);
-};
-document.getElementById("block").onclick=()=>{
-  if(!peer) return;
-  me.block=me.block||[]; if(!me.block.includes(peer)) me.block.push(peer);
-  save(); showApp(true);
-};
-document.getElementById("prem").onclick=()=>{
-  if(document.getElementById("code").value.trim()!==PREMIUM){alert("Код не тот."); return}
-  me.premium=true; if(!me.ach.includes("премиум")) me.ach.push("премиум"); save(); showApp(true); beat();
-};
-function draw(){
-  const now=Date.now();
-  const here=Object.values(people).filter(p=>now-p.t<120000 && p.region===room && !blocked(p.nick));
-  document.getElementById("people").innerHTML=here.map(p=>`<div class="person"><div class="ava">${p.nick.slice(0,1)}</div><div><b>${p.nick}</b><br><span class="muted">${p.skill||"молчит"}</span></div></div>`).join("")||"<p class='muted'>В области тихо.</p>";
-  document.getElementById("places").innerHTML=places.filter(p=>p.region===room && !blocked(p.nick)).slice(-5).map(p=>`<div class="person"><div class="ava">+</div><div><b>${p.nick}</b><br>${p.text||"отметил место"}</div></div>`).join("");
-  document.getElementById("dm-title").textContent=peer?("Личка с "+peer):"Выбери человека на карте";
-  document.getElementById("dm").innerHTML=msgs.filter(m=>m.kind==="dm" && ((m.frm===me?.nick && m.to===peer)||(m.to===me?.nick && m.frm===peer)) && !blocked(m.frm)).slice(-20).map(m=>`<div class="msg"><div class="ava">${m.frm.slice(0,1)}</div><div><b>${m.frm}</b><br>${m.text||""}${m.photo?`<img class="shot" src="${m.photo}">`:""}</div></div>`).join("")||"<p class='muted'>Пока пусто.</p>";
+function dist(a,b){
+  const R=6371, dLat=(b[0]-a[0])*Math.PI/180, dLng=(b[1]-a[1])*Math.PI/180;
+  const s=Math.sin(dLat/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
 }
+async function badge(code){
+  try{await sb("badges",{method:"POST",body:JSON.stringify({nick:me.nick,code})})}catch(e){}
+}
+document.getElementById("share").onclick=()=>{
+  sharing=!sharing;
+  document.getElementById("share").textContent=sharing?"Скрыть меня":"Меня видно";
+  if(!sharing){ if(watchId) navigator.geolocation.clearWatch(watchId); watchId=null; return; }
+  watchId=navigator.geolocation.watchPosition(async pos=>{
+    const here=[pos.coords.latitude,pos.coords.longitude];
+    meMarker.setLatLng(here); if(!last) map.setView(here,16);
+    if(last){
+      const step=dist(last,here);
+      if(step>0.02 && step<0.4) km+=step;
+    }
+    last=here;
+    document.getElementById("km").textContent=km.toFixed(1)+" км сегодня";
+    if(km>=5) badge("5km");
+    if(km>=10) badge("10km");
+    await sb("spots",{method:"POST",headers:{...headers(),Prefer:"resolution=merge-duplicates"},body:JSON.stringify({nick:me.nick,lat:here[0],lng:here[1],sharing:true,km_today:km,day})});
+  },()=>alert("Телефон не отдал геолокацию."),{enableHighAccuracy:true,maximumAge:5000});
+};
+document.getElementById("mark").onclick=async()=>{
+  const c=map.getCenter();
+  const note=prompt("Что в этом месте?");
+  if(!note) return;
+  await sb("places",{method:"POST",body:JSON.stringify({nick:me.nick,lat:c.lat,lng:c.lng,note})});
+  badge("place"); pull();
+};
+document.getElementById("send").onclick=async()=>{
+  if(!peer){alert("Нажми на человека на карте."); return}
+  const body=document.getElementById("dmtext").value.trim(); if(!body) return;
+  await sb("messages",{method:"POST",body:JSON.stringify({frm:me.nick,to_nick:peer,body})});
+  document.getElementById("dmtext").value=""; pull();
+};
+document.getElementById("block").onclick=()=>{ if(!peer||blocks.includes(peer)) return; blocks.push(peer); localStorage.setItem("janynda-block",JSON.stringify(blocks)); pull(); };
 async function pull(){
+  if(!me) return;
   try{
-    const res=await fetch("https://ntfy.sh/"+TOPIC+"/json?poll=1&since=30m");
-    const raw=await res.text();
-    raw.split("\n").forEach(line=>{
-      if(!line.trim()) return;
-      try{
-        const wrap=JSON.parse(line);
-        const obj=JSON.parse(wrap.message||"{}");
-        if(obj.kind==="here") people[obj.nick]=obj;
-        if(obj.kind==="dm" && !msgs.some(m=>m.t===obj.t && m.frm===obj.frm)) msgs.push(obj);
-        if(obj.kind==="place" && !places.some(m=>m.t===obj.t && m.nick===obj.nick)) places.push(obj);
-      }catch(e){}
+    const spots=await sb("spots?sharing=eq.true&select=nick,lat,lng,km_today,profiles(skill)");
+    const placeRows=await sb("places?select=nick,lat,lng,note&order=id.desc&limit=30");
+    const badges=await sb("badges?nick=eq."+encodeURIComponent(me.nick)+"&select=code");
+    layer.clearLayers();
+    (spots||[]).filter(s=>s.nick!==me.nick && !blocks.includes(s.nick)).forEach(s=>{
+      L.marker([s.lat,s.lng]).addTo(layer).bindPopup(s.nick).on("click",()=>{peer=s.nick; tab("dm"); document.getElementById("dm-title").textContent="Личка с "+peer});
     });
-    if(me){drawMap(); draw()}
-  }catch(e){}
+    (placeRows||[]).forEach(p=>L.circleMarker([p.lat,p.lng],{radius:5,color:"#171614"}).addTo(layer).bindPopup(p.nick+": "+p.note));
+    document.getElementById("people").innerHTML=(spots||[]).filter(s=>!blocks.includes(s.nick)).map(s=>`<div class="person"><div class="ava">${s.nick.slice(0,1)}</div><div><b>${s.nick}</b><br><span class="muted">${(s.km_today||0).toFixed(1)} км</span></div></div>`).join("")||"<p class='muted'>Никто ещё не включил точку.</p>";
+    document.getElementById("badges").innerHTML=(badges||[]).map(b=>`<div class="person"><div class="ava">+</div><div>${({ "5km":"прошёл 5 км за день","10km":"прошёл 10 км","place":"отметил место" })[b.code]||b.code}</div></div>`).join("")||"<p class='muted'>Пока пусто. Километры копятся, только когда «меня видно».</p>";
+    if(peer){
+      const q="messages?or=(and(frm.eq."+me.nick+",to_nick.eq."+peer+"),and(frm.eq."+peer+",to_nick.eq."+me.nick+"))&select=frm,body&order=id.asc&limit=30";
+      const rows=await sb(q);
+      document.getElementById("dm").innerHTML=(rows||[]).map(m=>`<div class="person"><div><b>${m.frm}</b><br>${m.body}</div></div>`).join("");
+    }
+  }catch(e){console.log(e)}
 }
-if(me&&me.nick) showApp(true);
-setInterval(()=>{if(me) beat(); pull()},8000);
-pull();
+if(me?.url) show(true);
+setInterval(pull,8000);
 </script>
 </body>
 </html>
