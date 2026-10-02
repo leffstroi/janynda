@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Жанында</title>
+<style>
+  :root { --bg:#0e1210; --card:#171d1a; --ink:#f6f1e7; --muted:#9aa59e; --line:#2a3330; --lime:#dff25a; --rose:#ffb7c5; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(1200px 500px at 10% -10%, #243028, var(--bg)); color:var(--ink); font-family:Georgia, serif; }
+  main { max-width:520px; margin:0 auto; padding:18px 14px 92px; }
+  h1 { font-size:40px; line-height:.95; margin:8px 0; }
+  h2 { margin:0 0 8px; font-size:22px; }
+  p { line-height:1.4; }
+  .muted { color:var(--muted); }
+  .card { background:rgba(23,29,26,.92); border:1px solid var(--line); border-radius:22px; padding:14px; margin:12px 0; }
+  input, select, textarea, button { width:100%; font:inherit; color:var(--ink); background:#101512; border:1px solid var(--line); border-radius:14px; padding:12px; }
+  textarea { min-height:74px; }
+  label { display:block; color:var(--muted); margin:10px 0 6px; font-size:14px; }
+  button { background:var(--lime); color:#17200b; border:0; font-weight:700; }
+  button.ghost { background:transparent; color:var(--lime); border:1px solid var(--lime); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .person, .msg { display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line); }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--lime); margin-top:6px; flex:none; }
+  .badge { display:inline-block; background:#2a2418; color:var(--rose); border-radius:999px; padding:2px 8px; font-size:12px; }
+  nav { position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); background:#101512ee; border-top:1px solid var(--line); }
+  nav button { margin:0; }
+  nav button.on { outline:2px solid var(--lime); }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <section id="auth">
+    <p class="muted">городская комната</p>
+    <h1>Жанында</h1>
+    <p class="muted">Кто сейчас в твоём районе. Пишешь тем, кто онлайн. Не карта слежки: район человек выбирает сам.</p>
+    <div class="card">
+      <label>Прозвище</label>
+      <input id="nick" maxlength="16" placeholder="не настоящее имя" />
+      <label>Пароль этой комнаты</label>
+      <input id="pass" type="password" />
+      <div class="row">
+        <div><label>Город</label><input id="city" value="Бишкек" /></div>
+        <div><label>Район</label>
+          <select id="district">
+            <option>центр</option><option>Асанбай</option><option>Джал</option><option>Восток-5</option><option>Аламедин</option><option>Ленинский</option>
+          </select>
+        </div>
+      </div>
+      <label>Чем можешь быть полезен</label>
+      <input id="skill" placeholder="перевод, математика, найти открытую аптеку" />
+      <button id="enter" type="button">Войти в город</button>
+      <p class="muted">Пароль хранится только на этом телефоне. В общий чат уходит прозвище, район и текст.</p>
+    </div>
+  </section>
+
+  <section id="app" class="hide">
+    <p class="muted" id="where"></p>
+    <h1 id="hello"></h1>
+    <div id="view-people">
+      <div class="card"><h2>Сейчас онлайн</h2><div id="people"></div></div>
+      <div class="card"><h2>Достижения</h2><div id="ach"></div></div>
+    </div>
+    <div id="view-chat" class="hide">
+      <div class="card">
+        <h2>Комната района</h2>
+        <div id="msgs"></div>
+        <textarea id="text" maxlength="240" placeholder="Коротко: что нужно или чем поможешь"></textarea>
+        <button id="send" type="button">Отправить</button>
+      </div>
+    </div>
+    <div id="view-me" class="hide">
+      <div class="card">
+        <h2 id="me-name"></h2>
+        <p id="me-skill"></p>
+        <p>Премиум не поднимает в списке. Он открывает свой цвет, длинное сообщение и булавку «могу помочь сегодня».</p>
+        <label>Код премиума, если уже оплатил хозяину сайта</label>
+        <input id="code" placeholder="код выдаёт хозяин, не банк" />
+        <button id="prem" type="button" class="ghost">Открыть премиум</button>
+        <p class="muted">Деньги сюда не вводятся. Оплата снаружи, код после неё. Карту в эту страницу не пиши.</p>
+        <button id="out" type="button">Выйти</button>
+      </div>
+    </div>
+  </section>
+</main>
+<nav id="bar" class="hide">
+  <button class="on" id="tab-people" type="button">Люди</button>
+  <button id="tab-chat" type="button">Чат</button>
+  <button id="tab-me" type="button">Я</button>
+</nav>
+<script>
+const TOPIC = "janynda-bishkek-room";
+const PREMIUM = "61-ordo";
+const KEY = "janynda-me";
+let me = JSON.parse(localStorage.getItem(KEY) || "null");
+let people = {};
+let msgs = [];
+function save(){ localStorage.setItem(KEY, JSON.stringify(me)); }
+function showApp(on){
+  document.getElementById("auth").classList.toggle("hide", on);
+  document.getElementById("app").classList.toggle("hide", !on);
+  document.getElementById("bar").classList.toggle("hide", !on);
+  if (!on) return;
+  document.getElementById("where").textContent = me.city + " · " + me.district;
+  document.getElementById("hello").textContent = me.nick;
+  document.getElementById("me-name").innerHTML = me.nick + (me.premium ? ' <span class="badge">премиум</span>' : "");
+  document.getElementById("me-skill").textContent = me.skill || "пока не сказал, чем полезен";
+  document.getElementById("ach").innerHTML = (me.ach || []).map(a => `<div class="person"><span class="dot"></span><div>${a}</div></div>`).join("") || "<p class='muted'>Первое достижение — написать в комнату.</p>";
+}
+document.getElementById("enter").onclick = () => {
+  const nick = document.getElementById("nick").value.trim();
+  const pass = document.getElementById("pass").value;
+  if (nick.length < 3 || pass.length < 4) return;
+  const old = me && me.nick === nick ? me : null;
+  me = old || { nick, city: document.getElementById("city").value.trim() || "Бишкек", district: document.getElementById("district").value, skill: document.getElementById("skill").value.trim(), premium:false, ach:["вошёл в город"] };
+  me.city = document.getElementById("city").value.trim() || me.city;
+  me.district = document.getElementById("district").value;
+  me.skill = document.getElementById("skill").value.trim();
+  me.pass = pass;
+  save();
+  showApp(true);
+  beat();
+};
+document.getElementById("out").onclick = () => { me = null; localStorage.removeItem(KEY); showApp(false); };
+function tab(name){
+  ["people","chat","me"].forEach(id => {
+    document.getElementById("view-"+id).classList.toggle("hide", id !== name);
+    document.getElementById("tab-"+id).classList.toggle("on", id === name);
+  });
+}
+document.getElementById("tab-people").onclick = () => tab("people");
+document.getElementById("tab-chat").onclick = () => tab("chat");
+document.getElementById("tab-me").onclick = () => tab("me");
+async function publish(obj){
+  await fetch("https://ntfy.sh/" + TOPIC, { method:"POST", body: JSON.stringify(obj) });
+}
+function beat(){
+  if (!me) return;
+  publish({ kind:"here", nick:me.nick, district:me.district, skill:me.skill, premium:!!me.premium, t:Date.now() });
+}
+document.getElementById("send").onclick = async () => {
+  const text = document.getElementById("text").value.trim();
+  if (!text) return;
+  const max = me.premium ? 240 : 80;
+  await publish({ kind:"say", nick:me.nick, district:me.district, premium:!!me.premium, text:text.slice(0, max), t:Date.now() });
+  if (!me.ach.includes("написал в комнату")) me.ach.push("написал в комнату");
+  save(); showApp(true);
+  document.getElementById("text").value = "";
+};
+document.getElementById("prem").onclick = () => {
+  if (document.getElementById("code").value.trim() !== PREMIUM) {
+    alert("Код не тот. Его даёт хозяин сайта после оплаты снаружи.");
+    return;
+  }
+  me.premium = true;
+  if (!me.ach.includes("премиум")) me.ach.push("премиум");
+  save(); showApp(true); beat();
+};
+function draw(){
+  const now = Date.now();
+  const list = Object.values(people).filter(p => now - p.t < 120000 && (!me || p.district === me.district));
+  document.getElementById("people").innerHTML = list.map(p => `<div class="person"><span class="dot"></span><div><b>${p.nick}</b> ${p.premium ? '<span class="badge">премиум</span>' : ""}<br><span class="muted">${p.district} · ${p.skill || "молчит, чем полезен"}</span></div></div>`).join("") || "<p class='muted'>В районе пока тишина. Открой страницу на втором телефоне — человек появится здесь.</p>";
+  document.getElementById("msgs").innerHTML = msgs.filter(m => !me || m.district === me.district).slice(-20).map(m => `<div class="msg"><div><b>${m.nick}</b> ${m.premium ? '<span class="badge">премиум</span>' : ""}<br>${m.text}</div></div>`).join("") || "<p class='muted'>Комната пустая.</p>";
+}
+async function pull(){
+  try {
+    const res = await fetch("https://ntfy.sh/" + TOPIC + "/json?poll=1&since=30m");
+    const raw = await res.text();
+    raw.split("\n").forEach(line => {
+      if (!line.trim()) return;
+      try {
+        const wrap = JSON.parse(line);
+        const obj = JSON.parse(wrap.message || "{}");
+        if (obj.kind === "here") people[obj.nick] = obj;
+        if (obj.kind === "say" && !msgs.some(m => m.t === obj.t && m.nick === obj.nick)) msgs.push(obj);
+      } catch (e) {}
+    });
+    draw();
+  } catch (e) {}
+}
+if (me && me.nick) showApp(true);
+setInterval(() => { if (me) beat(); pull(); }, 8000);
+pull();
+</script>
+</body>
+</html>
